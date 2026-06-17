@@ -1,4 +1,4 @@
-import sys,os
+import sys, os, shutil
 from wasteDetection.pipeline.training_pipeline import TrainPipeline
 from wasteDetection.utils.main_utils import decodeImage, encodeImageIntoBase64
 from flask import Flask, request, jsonify, render_template,Response
@@ -35,11 +35,11 @@ def predictRoute():
         image = request.json['image']
         decodeImage(image, clApp.filename)
 
-        os.system("cd yolov5/ && python detect.py --weights my_model.pt --img 416 --conf 0.5 --source ../data/inputImage.jpg")
+        os.system("cd yolov5/ && python detect.py --weights best.pt --img 416 --conf 0.5 --source ../data/inputImage.jpg")
 
         opencodedbase64 = encodeImageIntoBase64("yolov5/runs/detect/exp/inputImage.jpg")
         result = {"image": opencodedbase64.decode('utf-8')}
-        os.system("rm -rf yolov5/runs")
+        shutil.rmtree("yolov5/runs", ignore_errors=True)
 
     except ValueError as val:
         print(val)
@@ -58,8 +58,8 @@ def predictRoute():
 @cross_origin()
 def predictLive():
     try:
-        os.system("cd yolov5/ && python detect.py --weights my_model.pt --img 416 --conf 0.5 --source 0")
-        os.system("rm -rf yolov5/runs")
+        os.system("cd yolov5/ && python detect.py --weights best.pt --img 416 --conf 0.5 --source 0")
+        shutil.rmtree("yolov5/runs", ignore_errors=True)
         return "Camera starting!!" 
 
     except ValueError as val:

@@ -1,6 +1,5 @@
 dill==0.3.5.1
 from-root==1.0.2
-notebook==7.0.0a7
 gdown
 flask-cors
 flask
@@ -55,6 +54,3 @@ setuptools>=65.5.1 # Snyk vulnerability fix
 # mss  # screenshots
 # albumentations>=1.0.3
 # pycocotools>=2.0.6  # COCO mAP
-
-
--e .
