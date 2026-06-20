@@ -31,11 +31,22 @@ from zipfile import ZipFile, is_zipfile
 import cv2
 import numpy as np
 import pandas as pd
-import pkg_resources as pkg
+from packaging.version import Version as _Version
+class _PkgShim:
+    @staticmethod
+    def parse_version(v):
+        return _Version(v)
+pkg = _PkgShim()
 import torch
 import torchvision
 import yaml
-from ultralytics.yolo.utils.checks import check_requirements
+try:
+    from ultralytics.utils.checks import check_requirements
+except ImportError:
+    try:
+        from ultralytics.yolo.utils.checks import check_requirements
+    except ImportError:
+        def check_requirements(x): pass  # fallback no-op
 
 from utils import TryExcept, emojis
 from utils.downloads import curl_download, gsutil_getsize
@@ -968,7 +979,7 @@ def non_max_suppression(
 
 def strip_optimizer(f='best.pt', s=''):  # from utils.general import *; strip_optimizer()
     # Strip optimizer from 'f' to finalize training, optionally save as 's'
-    x = torch.load(f, map_location=torch.device('cpu'))
+    x = torch.load(f, map_location=torch.device('cpu'), weights_only=False)
     if x.get('ema'):
         x['model'] = x['ema']  # replace model with ema
     for k in 'optimizer', 'best_fitness', 'ema', 'updates':  # keys

@@ -295,15 +295,18 @@
 						data: JSON.stringify({
 							image: base64Data
 						}),
-						success: function (res) {
-							$(".res-part").html("");
-							$(".res-part2").html("");
-							var imageData = res.image;
-							$(".res-part2").append("<img class='resp-img' src='data:image/jpeg;base64," +
-								imageData + "' alt='' />");
-							// $(".res-part").html("<pre>" + JSON.stringify(res[0], undefined, 2) + "</pre>");
-							$("#loading").hide();
-						}
+					success: function (res) {
+						$(".res-part").html("");
+						$(".res-part2").html("");
+						var imageData = res.image;
+						$(".res-part2").append("<img class='resp-img' src='data:image/jpeg;base64," +
+							imageData + "' alt='' />");
+						$("#loading").hide();
+					},
+					error: function (xhr, status, error) {
+						$("#loading").hide();
+						$(".res-part2").html("<div class='alert alert-danger m-3'>Prediction failed: " + (xhr.responseText || error) + "</div>");
+					}
 					});
 				}
 			}

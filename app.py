@@ -1,4 +1,4 @@
-import sys, os, shutil
+import sys, os, shutil, subprocess
 from wasteDetection.pipeline.training_pipeline import TrainPipeline
 from wasteDetection.utils.main_utils import decodeImage, encodeImageIntoBase64
 from flask import Flask, request, jsonify, render_template,Response
@@ -35,22 +35,40 @@ def predictRoute():
         image = request.json['image']
         decodeImage(image, clApp.filename)
 
-        os.system("cd yolov5/ && python detect.py --weights best.pt --img 416 --conf 0.5 --source ../data/inputImage.jpg")
-
-        opencodedbase64 = encodeImageIntoBase64("yolov5/runs/detect/exp/inputImage.jpg")
-        result = {"image": opencodedbase64.decode('utf-8')}
+        # clean previous runs so output always lands in exp/
         shutil.rmtree("yolov5/runs", ignore_errors=True)
+
+        result = subprocess.run(
+            [sys.executable, "detect.py", "--weights", "best.pt",
+             "--img", "416", "--conf", "0.5",
+             "--source", "../data/inputImage.jpg",
+             "--exist-ok"],
+            cwd=os.path.join(os.getcwd(), "yolov5"),
+            capture_output=True, text=True
+        )
+        if result.returncode != 0:
+            print("YOLOv5 error:", result.stderr)
+            return Response(f"Detection failed: {result.stderr}", status=500)
+
+        # find the saved output image dynamically
+        import glob
+        matches = glob.glob("yolov5/runs/detect/**/inputImage.jpg", recursive=True)
+        if not matches:
+            return Response(f"Detection ran but output image not found. stdout: {result.stdout}", status=500)
+
+        opencodedbase64 = encodeImageIntoBase64(matches[0])
+        response = {"image": opencodedbase64.decode('utf-8')}
+        shutil.rmtree("yolov5/runs", ignore_errors=True)
+        return jsonify(response)
 
     except ValueError as val:
         print(val)
-        return Response("Value not found inside  json data")
+        return Response("Value not found inside json data", status=400)
     except KeyError:
-        return Response("Key value error incorrect key passed")
+        return Response("Key value error: incorrect key passed", status=400)
     except Exception as e:
         print(e)
-        result = "Invalid input"
-
-    return jsonify(result)
+        return Response(f"Error: {str(e)}", status=500)
 
 
 
@@ -58,7 +76,11 @@ def predictRoute():
 @cross_origin()
 def predictLive():
     try:
-        os.system("cd yolov5/ && python detect.py --weights best.pt --img 416 --conf 0.5 --source 0")
+        subprocess.run(
+            [sys.executable, "detect.py", "--weights", "best.pt",
+             "--img", "416", "--conf", "0.5", "--source", "0"],
+            cwd=os.path.join(os.getcwd(), "yolov5")
+        )
         shutil.rmtree("yolov5/runs", ignore_errors=True)
         return "Camera starting!!" 
 
